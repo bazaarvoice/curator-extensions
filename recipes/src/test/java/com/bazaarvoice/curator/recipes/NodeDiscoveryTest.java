@@ -213,6 +213,7 @@ public class NodeDiscoveryTest extends ZooKeeperTest {
         assertTrue(waitUntilSize(_nodeDiscovery.getNodes(), 1));
 
         deleteNode(FOO);
+        assertTrue(waitUntilSize(_nodeDiscovery.getNodes(), 0));
         assertFalse(_nodeDiscovery.contains("data"));
     }
 
