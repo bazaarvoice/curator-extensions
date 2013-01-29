@@ -2,6 +2,7 @@ package com.bazaarvoice.curator.dropwizard;
 
 import com.google.common.io.Closeables;
 import com.netflix.curator.framework.CuratorFramework;
+import com.netflix.curator.framework.imps.CuratorFrameworkState;
 import com.yammer.dropwizard.lifecycle.Managed;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -19,11 +20,15 @@ public class ManagedCuratorFramework implements Managed {
 
     @Override
     public void start() throws Exception {
-        // Nothing to do
+        if (_curator.getState() == CuratorFrameworkState.LATENT) {
+            _curator.start();
+        }
     }
 
     @Override
     public void stop() throws Exception {
-        Closeables.closeQuietly(_curator);
+        if (_curator.getState() == CuratorFrameworkState.STARTED) {
+            Closeables.closeQuietly(_curator);
+        }
     }
 }
