@@ -163,7 +163,7 @@ public class NodeDiscovery<T> implements Closeable {
         }
 
         try {
-            _pathCache.start(true);
+            _pathCache.start(PathChildrenCache.StartMode.BUILD_INITIAL_CACHE);
         } catch (Throwable t) {
             waitThenStartAgain();
             return;
