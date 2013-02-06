@@ -51,6 +51,12 @@ public class ZooKeeperConfigurationTest {
     }
 
     @Test
+    public void testDefaultRetry() throws IOException {
+        ZooKeeperConfiguration config = parse(ImmutableMap.<String, Object>of());
+        assertNotNull(config.getRetryPolicy());
+    }
+
+    @Test
     public void testDeserializeBoundedExponentialBackoffRetry() throws IOException {
         ZooKeeperConfiguration config = parse(ImmutableMap.of("retry-policy",
                 ImmutableMap.builder()

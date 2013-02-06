@@ -26,7 +26,7 @@ public class ZooKeeperConfiguration {
 
     @NotNull
     @JsonProperty("retry-policy")
-    private RetryPolicy _retryPolicy = null;
+    private RetryPolicy _retryPolicy = new BoundedExponentialBackoffRetry(100, 1000, 5);
 
     /**
      * Return a new Curator connection to the ensemble.  It is the caller's responsibility to start and close the
