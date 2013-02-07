@@ -10,7 +10,6 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.CuratorFrameworkFactory;
 import com.yammer.dropwizard.config.Environment;
-import org.hibernate.validator.constraints.NotEmpty;
 
 import javax.validation.constraints.NotNull;
 import java.util.concurrent.ThreadFactory;
@@ -21,7 +20,6 @@ public class ZooKeeperConfiguration {
     private static final RetryPolicy DEFAULT_RETRY_POLICY = new BoundedExponentialBackoffRetry(100, 1000, 5);
 
     @NotNull
-    @NotEmpty
     @JsonProperty("connectString")
     private Optional<String> _connectString = Optional.absent();
 
