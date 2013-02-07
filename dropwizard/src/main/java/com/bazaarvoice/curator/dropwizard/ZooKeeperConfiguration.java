@@ -1,10 +1,11 @@
 package com.bazaarvoice.curator.dropwizard;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Optional;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.CuratorFrameworkFactory;
@@ -16,17 +17,27 @@ import java.util.concurrent.ThreadFactory;
 
 /** Jackson friendly object for holding configuration information about a ZooKeeper ensemble. */
 public class ZooKeeperConfiguration {
+    private static final String DEFAULT_CONNECT_STRING = "localhost:2181";
+    private static final RetryPolicy DEFAULT_RETRY_POLICY = new BoundedExponentialBackoffRetry(100, 1000, 5);
+
     @NotNull
     @NotEmpty
-    @JsonProperty("connect-string")
-    private String _connectString = "localhost:2181";
+    @JsonProperty("connectString")
+    private Optional<String> _connectString = Optional.absent();
 
     @JsonProperty("namespace")
-    private String _namespace = null;
+    private Optional<String> _namespace = Optional.absent();
 
     @NotNull
-    @JsonProperty("retry-policy")
-    private RetryPolicy _retryPolicy = new BoundedExponentialBackoffRetry(100, 1000, 5);
+    @JsonProperty("retryPolicy")
+    private Optional<RetryPolicy> _configRetryPolicy = Optional.absent();
+
+    /**
+     * Used to hold a retry policy provided by a setter.  This needs to be separate from {@code _retryPolicy} because
+     * we want callers to be able to specify any Curator {@link com.netflix.curator.RetryPolicy} implementation instead
+     * of the inner {@link RetryPolicy} and its subclasses that are used entirely to hold Jackson annotations.
+     */
+    private Optional<com.netflix.curator.RetryPolicy> _setterRetryPolicy = Optional.absent();
 
     /**
      * Return a new Curator connection to the ensemble.  It is the caller's responsibility to start and close the
@@ -41,9 +52,9 @@ public class ZooKeeperConfiguration {
                 .build();
 
         return CuratorFrameworkFactory.builder()
-                .connectString(_connectString)
-                .retryPolicy(_retryPolicy)
-                .namespace(_namespace)
+                .connectString(_connectString.or(DEFAULT_CONNECT_STRING))
+                .retryPolicy(_setterRetryPolicy.or(_configRetryPolicy.or(DEFAULT_RETRY_POLICY)))
+                .namespace(_namespace.orNull())
                 .threadFactory(threadFactory)
                 .build();
     }
@@ -58,29 +69,47 @@ public class ZooKeeperConfiguration {
         return curator;
     }
 
-    @VisibleForTesting
-    String getConnectString() {
+    @JsonIgnore
+    public Optional<String> getConnectString() {
         return _connectString;
     }
 
-    @VisibleForTesting
-    String getNamespace() {
+    @JsonIgnore
+    public Optional<String> getNamespace() {
         return _namespace;
     }
 
-    @VisibleForTesting
-    RetryPolicy getRetryPolicy() {
-        return _retryPolicy;
+    @JsonIgnore
+    public Optional<com.netflix.curator.RetryPolicy> getRetryPolicy() {
+        if (_setterRetryPolicy.isPresent()) {
+            return _setterRetryPolicy;
+        }
+
+        return Optional.<com.netflix.curator.RetryPolicy>fromNullable(_configRetryPolicy.orNull());
+    }
+
+    @JsonIgnore
+    public void setConnectString(String connectString) {
+        _connectString = Optional.of(connectString);
+    }
+
+    @JsonIgnore
+    public void setNamespace(String namespace) {
+        _namespace = Optional.of(namespace);
+    }
+
+    @JsonIgnore
+    public void setRetryPolicy(com.netflix.curator.RetryPolicy retryPolicy) {
+        _setterRetryPolicy = Optional.of(retryPolicy);
     }
 
     @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
     @JsonSubTypes({
-            @JsonSubTypes.Type(value = BoundedExponentialBackoffRetry.class, name = "bounded-exponential-backoff"),
-            @JsonSubTypes.Type(value = ExponentialBackoffRetry.class, name = "exponential-backoff"),
-            @JsonSubTypes.Type(value = RetryNTimes.class, name = "n-times"),
-            @JsonSubTypes.Type(value = RetryUntilElapsed.class, name = "until-elapsed")
+            @JsonSubTypes.Type(value = BoundedExponentialBackoffRetry.class, name = "boundedExponentialBackoff"),
+            @JsonSubTypes.Type(value = ExponentialBackoffRetry.class, name = "exponentialBackoff"),
+            @JsonSubTypes.Type(value = RetryNTimes.class, name = "nTimes"),
+            @JsonSubTypes.Type(value = RetryUntilElapsed.class, name = "untilElapsed")
     })
-    @VisibleForTesting
     static interface RetryPolicy extends com.netflix.curator.RetryPolicy {
     }
 
@@ -88,9 +117,9 @@ public class ZooKeeperConfiguration {
             extends com.netflix.curator.retry.BoundedExponentialBackoffRetry
             implements RetryPolicy {
         @JsonCreator
-        public BoundedExponentialBackoffRetry(@JsonProperty("base-sleep-time-ms") int baseSleepTimeMs,
-                                              @JsonProperty("max-sleep-time-ms") int maxSleepTimeMs,
-                                              @JsonProperty("max-retries") int maxRetries) {
+        public BoundedExponentialBackoffRetry(@JsonProperty("baseSleepTimeMs") int baseSleepTimeMs,
+                                              @JsonProperty("maxSleepTimeMs") int maxSleepTimeMs,
+                                              @JsonProperty("maxRetries") int maxRetries) {
             super(baseSleepTimeMs, maxSleepTimeMs, maxRetries);
         }
     }
@@ -99,8 +128,8 @@ public class ZooKeeperConfiguration {
             extends com.netflix.curator.retry.ExponentialBackoffRetry
             implements RetryPolicy {
         @JsonCreator
-        public ExponentialBackoffRetry(@JsonProperty("base-sleep-time-ms") int baseSleepTimeMs,
-                                       @JsonProperty("max-retries") int maxRetries) {
+        public ExponentialBackoffRetry(@JsonProperty("baseSleepTimeMs") int baseSleepTimeMs,
+                                       @JsonProperty("maxRetries") int maxRetries) {
             super(baseSleepTimeMs, maxRetries);
         }
     }
@@ -110,7 +139,7 @@ public class ZooKeeperConfiguration {
             implements RetryPolicy {
         @JsonCreator
         public RetryNTimes(@JsonProperty("n") int n,
-                           @JsonProperty("sleep-ms-between-retries") int sleepMsBetweenRetries) {
+                           @JsonProperty("sleepMsBetweenRetries") int sleepMsBetweenRetries) {
             super(n, sleepMsBetweenRetries);
         }
     }
@@ -118,8 +147,8 @@ public class ZooKeeperConfiguration {
     private static final class RetryUntilElapsed
             extends com.netflix.curator.retry.RetryUntilElapsed
             implements RetryPolicy {
-        public RetryUntilElapsed(@JsonProperty("max-elapsed-time-ms") int maxElapsedTimeMs,
-                                 @JsonProperty("sleep-ms-between-retries") int sleepMsBetweenRetries) {
+        public RetryUntilElapsed(@JsonProperty("maxElapsedTimeMs") int maxElapsedTimeMs,
+                                 @JsonProperty("sleepMsBetweenRetries") int sleepMsBetweenRetries) {
             super(maxElapsedTimeMs, sleepMsBetweenRetries);
         }
     }
