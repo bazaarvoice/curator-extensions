@@ -50,7 +50,7 @@ public class ZooKeeperConfiguration {
                 .build();
 
         return CuratorFrameworkFactory.builder()
-                .connectString(_connectString.or(DEFAULT_CONNECT_STRING))
+                .ensembleProvider(new ResolvingEnsembleProvider(_connectString.or(DEFAULT_CONNECT_STRING)))
                 .retryPolicy(_setterRetryPolicy.or(_configRetryPolicy.or(DEFAULT_RETRY_POLICY)))
                 .namespace(_namespace.orNull())
                 .threadFactory(threadFactory)
