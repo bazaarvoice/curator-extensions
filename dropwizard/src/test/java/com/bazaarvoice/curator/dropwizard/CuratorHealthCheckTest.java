@@ -1,6 +1,6 @@
 package com.bazaarvoice.curator.dropwizard;
 
-import com.netflix.curator.framework.CuratorFramework;
+import org.apache.curator.framework.CuratorFramework;
 import org.junit.Test;
 
 import static org.junit.Assert.assertFalse;

@@ -4,7 +4,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Joiner;
 import com.google.common.collect.Sets;
 import com.google.common.net.HostAndPort;
-import com.netflix.curator.ensemble.EnsembleProvider;
+import org.apache.curator.ensemble.EnsembleProvider;
 import org.apache.zookeeper.client.ConnectStringParser;
 
 import java.io.IOException;

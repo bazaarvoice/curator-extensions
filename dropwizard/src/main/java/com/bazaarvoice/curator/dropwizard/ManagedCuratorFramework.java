@@ -1,8 +1,8 @@
 package com.bazaarvoice.curator.dropwizard;
 
 import com.google.common.io.Closeables;
-import com.netflix.curator.framework.CuratorFramework;
-import com.netflix.curator.framework.imps.CuratorFrameworkState;
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.imps.CuratorFrameworkState;
 import com.yammer.dropwizard.lifecycle.Managed;
 
 import static com.google.common.base.Preconditions.checkNotNull;

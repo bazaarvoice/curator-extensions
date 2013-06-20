@@ -7,8 +7,8 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.google.common.base.Optional;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import com.netflix.curator.framework.CuratorFramework;
-import com.netflix.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.CuratorFrameworkFactory;
 import com.yammer.dropwizard.config.Environment;
 
 import javax.validation.constraints.NotNull;
@@ -32,10 +32,10 @@ public class ZooKeeperConfiguration {
 
     /**
      * Used to hold a retry policy provided by a setter.  This needs to be separate from {@code _retryPolicy} because
-     * we want callers to be able to specify any Curator {@link com.netflix.curator.RetryPolicy} implementation instead
+     * we want callers to be able to specify any Curator {@link org.apache.curator.RetryPolicy} implementation instead
      * of the inner {@link RetryPolicy} and its subclasses that are used entirely to hold Jackson annotations.
      */
-    private Optional<com.netflix.curator.RetryPolicy> _setterRetryPolicy = Optional.absent();
+    private Optional<org.apache.curator.RetryPolicy> _setterRetryPolicy = Optional.absent();
 
     /**
      * Return a new Curator connection to the ensemble.  It is the caller's responsibility to start and close the
@@ -78,12 +78,12 @@ public class ZooKeeperConfiguration {
     }
 
     @JsonIgnore
-    public Optional<com.netflix.curator.RetryPolicy> getRetryPolicy() {
+    public Optional<org.apache.curator.RetryPolicy> getRetryPolicy() {
         if (_setterRetryPolicy.isPresent()) {
             return _setterRetryPolicy;
         }
 
-        return Optional.<com.netflix.curator.RetryPolicy>fromNullable(_configRetryPolicy.orNull());
+        return Optional.<org.apache.curator.RetryPolicy>fromNullable(_configRetryPolicy.orNull());
     }
 
     @JsonIgnore
@@ -97,7 +97,7 @@ public class ZooKeeperConfiguration {
     }
 
     @JsonIgnore
-    public void setRetryPolicy(com.netflix.curator.RetryPolicy retryPolicy) {
+    public void setRetryPolicy(org.apache.curator.RetryPolicy retryPolicy) {
         _setterRetryPolicy = Optional.of(retryPolicy);
     }
 
@@ -108,11 +108,11 @@ public class ZooKeeperConfiguration {
             @JsonSubTypes.Type(value = RetryNTimes.class, name = "nTimes"),
             @JsonSubTypes.Type(value = RetryUntilElapsed.class, name = "untilElapsed")
     })
-    static interface RetryPolicy extends com.netflix.curator.RetryPolicy {
+    static interface RetryPolicy extends org.apache.curator.RetryPolicy {
     }
 
     private static final class BoundedExponentialBackoffRetry
-            extends com.netflix.curator.retry.BoundedExponentialBackoffRetry
+            extends org.apache.curator.retry.BoundedExponentialBackoffRetry
             implements RetryPolicy {
         @JsonCreator
         public BoundedExponentialBackoffRetry(@JsonProperty("baseSleepTimeMs") int baseSleepTimeMs,
@@ -123,7 +123,7 @@ public class ZooKeeperConfiguration {
     }
 
     private static final class ExponentialBackoffRetry
-            extends com.netflix.curator.retry.ExponentialBackoffRetry
+            extends org.apache.curator.retry.ExponentialBackoffRetry
             implements RetryPolicy {
         @JsonCreator
         public ExponentialBackoffRetry(@JsonProperty("baseSleepTimeMs") int baseSleepTimeMs,
@@ -133,7 +133,7 @@ public class ZooKeeperConfiguration {
     }
 
     private static final class RetryNTimes
-            extends com.netflix.curator.retry.RetryNTimes
+            extends org.apache.curator.retry.RetryNTimes
             implements RetryPolicy {
         @JsonCreator
         public RetryNTimes(@JsonProperty("n") int n,
@@ -143,7 +143,7 @@ public class ZooKeeperConfiguration {
     }
 
     private static final class RetryUntilElapsed
-            extends com.netflix.curator.retry.RetryUntilElapsed
+            extends org.apache.curator.retry.RetryUntilElapsed
             implements RetryPolicy {
         public RetryUntilElapsed(@JsonProperty("maxElapsedTimeMs") int maxElapsedTimeMs,
                                  @JsonProperty("sleepMsBetweenRetries") int sleepMsBetweenRetries) {

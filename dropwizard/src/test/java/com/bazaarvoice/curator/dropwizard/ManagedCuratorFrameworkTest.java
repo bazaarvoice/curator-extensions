@@ -1,7 +1,7 @@
 package com.bazaarvoice.curator.dropwizard;
 
-import com.netflix.curator.framework.CuratorFramework;
-import com.netflix.curator.framework.imps.CuratorFrameworkState;
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.imps.CuratorFrameworkState;
 import org.junit.Test;
 
 import static org.mockito.Mockito.mock;

@@ -2,8 +2,8 @@ package com.bazaarvoice.curator.recipes;
 
 import com.bazaarvoice.curator.test.ZooKeeperTest;
 import com.google.common.collect.Lists;
-import com.netflix.curator.framework.CuratorFramework;
-import com.netflix.curator.utils.ZKPaths;
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.data.Stat;
 import org.junit.After;

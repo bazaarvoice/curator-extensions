@@ -1,6 +1,6 @@
 package com.bazaarvoice.curator.dropwizard;
 
-import com.netflix.curator.framework.CuratorFramework;
+import org.apache.curator.framework.CuratorFramework;
 import com.yammer.metrics.core.HealthCheck;
 
 import static com.google.common.base.Preconditions.checkNotNull;
