@@ -343,7 +343,7 @@ public class PersistentEphemeralNode {
 
         private void deleteNode(CountDownLatch latch) {
             if (_nodePath == null) {
-                // The only time _nodePath is true is if we're creating a node.  Wait for it to finish.
+                // The only time _nodePath is null is if we're creating a node.  Wait for it to finish.
                 _async.waitThenDeleteNode(latch);
                 return;
             }
