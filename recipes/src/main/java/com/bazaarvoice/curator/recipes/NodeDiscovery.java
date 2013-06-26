@@ -102,6 +102,8 @@ public class NodeDiscovery<T> implements Closeable {
         });
     }
 
+    This won't compile'
+
     /**
      * Returns true if the specified node is a member of the iterable returned by {@link #getNodes()}.
      *
