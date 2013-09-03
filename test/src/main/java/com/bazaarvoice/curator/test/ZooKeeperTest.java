@@ -1,8 +1,8 @@
 package com.bazaarvoice.curator.test;
 
 import com.google.common.base.Throwables;
-import com.google.common.collect.Lists;
 import com.google.common.io.Closeables;
+import com.google.common.io.Closer;
 import org.apache.curator.CuratorZookeeperClient;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
@@ -18,7 +18,6 @@ import org.junit.After;
 import org.junit.Before;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -35,8 +34,8 @@ public abstract class ZooKeeperTest {
      */
     private final InstanceSpec _instanceSpec = InstanceSpec.newInstanceSpec();
 
-    /** All of the curator instances that we've created running the test (so they can be cleaned up later). */
-    private final List<CuratorFramework> _curatorInstances = Lists.newArrayList();
+    /** All of the resources that we've created running the test (so they can be cleaned up later). */
+    private final Closer _closer = Closer.create();
 
     @Before
     public void setup() throws Exception {
@@ -45,15 +44,15 @@ public abstract class ZooKeeperTest {
 
     @After
     public void teardown() throws Exception {
-        for (CuratorFramework curator : _curatorInstances) {
-            Closeables.closeQuietly(curator);
-        }
+        Closeables.close(_closer, true);
+    }
 
-        Closeables.closeQuietly(_zooKeeperServer);
+    public Closer closer() {
+        return _closer;
     }
 
     public void startZooKeeper() throws Exception {
-        _zooKeeperServer = new TestingServer(_instanceSpec);
+        _zooKeeperServer = _closer.register(new TestingServer(_instanceSpec));
     }
 
     public void stopZooKeeper() throws IOException {
@@ -74,10 +73,8 @@ public abstract class ZooKeeperTest {
     public CuratorFramework newCurator(CuratorFrameworkFactory.Builder builder) throws Exception {
         assertNotNull("ZooKeeper testing server is null, did you forget to call super.setup()", _zooKeeperServer);
 
-        CuratorFramework curator = builder.connectString(_instanceSpec.getConnectString()).build();
+        CuratorFramework curator = _closer.register(builder.connectString(_instanceSpec.getConnectString()).build());
         curator.start();
-
-        _curatorInstances.add(curator);
 
         return curator;
     }

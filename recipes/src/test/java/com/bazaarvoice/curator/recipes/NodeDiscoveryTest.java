@@ -4,10 +4,8 @@ import com.bazaarvoice.curator.test.ZooKeeperTest;
 import com.google.common.base.Objects;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
-import com.google.common.io.Closeables;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.utils.ZKPaths;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -37,7 +35,6 @@ public class NodeDiscoveryTest extends ZooKeeperTest {
         }
     };
 
-    private final List<NodeDiscovery<?>> _nodeDiscoveries = Lists.newArrayList();
     private NodeDiscovery<String> _nodeDiscovery;
     private CuratorFramework _curator;
 
@@ -50,16 +47,6 @@ public class NodeDiscoveryTest extends ZooKeeperTest {
         _nodeDiscovery.start();
 
         _curator = newCurator();
-    }
-
-    @After
-    @Override
-    public void teardown() throws Exception {
-        for (NodeDiscovery<?> discovery : _nodeDiscoveries) {
-            Closeables.closeQuietly(discovery);
-        }
-
-        super.teardown();
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -581,9 +568,7 @@ public class NodeDiscoveryTest extends ZooKeeperTest {
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     private <T> NodeDiscovery<T> newDiscovery(String path, NodeDiscovery.NodeDataParser<T> parser) throws Exception {
-        NodeDiscovery<T> discovery = new NodeDiscovery<T>(newCurator(), path, parser);
-        _nodeDiscoveries.add(discovery);
-        return discovery;
+        return closer().register(new NodeDiscovery<T>(newCurator(), path, parser));
     }
 
     /** Create a node. */

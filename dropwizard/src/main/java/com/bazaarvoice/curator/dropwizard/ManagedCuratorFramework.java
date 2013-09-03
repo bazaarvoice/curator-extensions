@@ -28,7 +28,7 @@ public class ManagedCuratorFramework implements Managed {
     @Override
     public void stop() throws Exception {
         if (_curator.getState() == CuratorFrameworkState.STARTED) {
-            Closeables.closeQuietly(_curator);
+            Closeables.close(_curator, true);
         }
     }
 }

@@ -9,7 +9,6 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <groupId>com.bazaarvoice.curator</groupId>
     <artifactId>dropwizard</artifactId>
     <packaging>jar</packaging>
 
