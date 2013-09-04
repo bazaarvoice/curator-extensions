@@ -122,6 +122,10 @@ public abstract class ZooKeeperTest {
             return new WatchTrigger(Event.EventType.NodeDataChanged);
         }
 
+        public static WatchTrigger childrenTrigger() {
+            return new WatchTrigger(Event.EventType.NodeChildrenChanged);
+        }
+
         public static WatchTrigger deletionTrigger() {
             return new WatchTrigger(Event.EventType.NodeDeleted);
         }
