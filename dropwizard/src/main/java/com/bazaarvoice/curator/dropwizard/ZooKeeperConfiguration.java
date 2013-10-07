@@ -1,5 +1,6 @@
 package com.bazaarvoice.curator.dropwizard;
 
+import com.bazaarvoice.curator.ResolvingEnsembleProvider;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -7,9 +8,9 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.google.common.base.Optional;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import com.yammer.dropwizard.config.Environment;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
-import com.yammer.dropwizard.config.Environment;
 
 import javax.validation.constraints.NotNull;
 import java.util.concurrent.ThreadFactory;

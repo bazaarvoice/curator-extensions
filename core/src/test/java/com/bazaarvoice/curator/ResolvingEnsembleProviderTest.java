@@ -1,4 +1,4 @@
-package com.bazaarvoice.curator.dropwizard;
+package com.bazaarvoice.curator;
 
 import org.junit.Test;
 import org.mockito.stubbing.OngoingStubbing;

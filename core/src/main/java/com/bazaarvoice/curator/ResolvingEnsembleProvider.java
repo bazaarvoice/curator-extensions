@@ -1,4 +1,4 @@
-package com.bazaarvoice.curator.dropwizard;
+package com.bazaarvoice.curator;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Joiner;
