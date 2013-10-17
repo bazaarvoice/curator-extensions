@@ -4,14 +4,19 @@ import com.bazaarvoice.curator.test.ZooKeeperTest;
 import com.google.common.base.Objects;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.utils.ZKPaths;
 import org.junit.Before;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -22,6 +27,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 public class NodeDiscoveryTest extends ZooKeeperTest {
+    private static final Logger LOG = LoggerFactory.getLogger(NodeDiscoveryTest.class);
     private static final String PATH = "/path";
     private static final String FOO = ZKPaths.makePath(PATH, "foo");
 
@@ -564,6 +570,35 @@ public class NodeDiscoveryTest extends ZooKeeperTest {
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // Close tests
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    /** Verify that starting and stopping a NodeDiscovery object doesn't leak threads. */
+    @Test
+    public void testThreadLeak() throws Exception {
+        CuratorFramework curator = newCurator();
+
+        final Set<Thread> threadsAtStart = Thread.getAllStackTraces().keySet();
+
+        NodeDiscovery<String> nodeDiscovery = closer().register(new NodeDiscovery<String>(curator, PATH, PARSER));
+        nodeDiscovery.start();
+        nodeDiscovery.close();
+
+        // Get the threads at the end.  Since NodeDiscovery calls shutdown() but doesn't awaitTermination() we may
+        // have to wait a little while for the NodeDiscovery test to terminate.  Wait up to 10 seconds for things
+        // to settle before failing the test (in the success case the loop will terminate quickly).
+        assertTrue(waitUntil(new Callable<Boolean>() {
+            @Override
+            public Boolean call() throws Exception {
+                Set<Thread> threadsAtEnd = Thread.getAllStackTraces().keySet();
+                Set<Thread> difference = Sets.difference(threadsAtEnd, threadsAtStart);
+                LOG.info("Extra threads: {}", difference);
+                return difference.isEmpty();
+            }
+        }));
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Helper functions
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -589,6 +624,19 @@ public class NodeDiscoveryTest extends ZooKeeperTest {
     /** Delete a node. */
     private void deleteNode(String path) throws Exception {
         _curator.delete().forPath(path);
+    }
+
+    private static boolean waitUntil(Callable<Boolean> function) throws Exception {
+        long start = System.nanoTime();
+        while (System.nanoTime() - start <= TimeUnit.SECONDS.toNanos((long) 10)) {
+            if (function.call()) {
+                return true;
+            }
+
+            Thread.yield();
+        }
+
+        return false;
     }
 
     private static <K, T> boolean waitUntilSize(Map<K, T> map, int size) {

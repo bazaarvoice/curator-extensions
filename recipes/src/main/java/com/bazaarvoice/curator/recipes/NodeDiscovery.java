@@ -74,9 +74,9 @@ public class NodeDiscovery<T> implements Closeable {
         _nodes = Maps.newConcurrentMap();
         _listeners = Sets.newSetFromMap(Maps.<NodeListener<T>, Boolean>newConcurrentMap());
         _curator = curator;
-        _pathCache = new PathChildrenCache(curator, nodePath, true, threadFactory);
-        _nodeDataParser = parser;
         _executor = Executors.newSingleThreadScheduledExecutor(threadFactory);
+        _pathCache = new PathChildrenCache(curator, nodePath, true, false, _executor);
+        _nodeDataParser = parser;
         _closed = false;
     }
 
