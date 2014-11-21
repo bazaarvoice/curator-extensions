@@ -52,7 +52,7 @@ public abstract class ZooKeeperTest {
     }
 
     public void startZooKeeper() throws Exception {
-        _zooKeeperServer = _closer.register(new TestingServer(_instanceSpec));
+        _zooKeeperServer = _closer.register(new TestingServer(_instanceSpec, true));
     }
 
     public void stopZooKeeper() throws IOException {
@@ -67,7 +67,7 @@ public abstract class ZooKeeperTest {
 
     @SuppressWarnings("UnusedDeclaration")
     public CuratorFramework newCurator() throws Exception {
-        return newCurator(CuratorFrameworkFactory.builder().retryPolicy(new RetryNTimes(0, 0)));
+        return newCurator(CuratorFrameworkFactory.builder().retryPolicy(new RetryNTimes(2, 10)));
     }
 
     public CuratorFramework newCurator(CuratorFrameworkFactory.Builder builder) throws Exception {
