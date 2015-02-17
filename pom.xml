@@ -24,9 +24,9 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <curator.version>2.7.0</curator.version>
-        <guava.version>17.0</guava.version>
-        <slf4j.version>1.7.7</slf4j.version>
+        <curator.version>2.7.1</curator.version>
+        <guava.version>18.0</guava.version>
+        <slf4j.version>1.7.10</slf4j.version>
     </properties>
 
     <build>
@@ -117,14 +117,14 @@
             <dependency>
                 <groupId>junit</groupId>
                 <artifactId>junit</artifactId>
-                <version>4.11</version>
+                <version>4.12</version>
                 <scope>test</scope>
             </dependency>
 
             <dependency>
                 <groupId>org.mockito</groupId>
                 <artifactId>mockito-core</artifactId>
-                <version>1.9.5</version>
+                <version>1.10.19</version>
                 <scope>test</scope>
             </dependency>
 
