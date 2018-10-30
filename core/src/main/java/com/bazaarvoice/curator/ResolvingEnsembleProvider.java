@@ -2,7 +2,6 @@ package com.bazaarvoice.curator;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Joiner;
-import com.google.common.collect.Sets;
 import com.google.common.net.HostAndPort;
 import org.apache.curator.ensemble.EnsembleProvider;
 import org.apache.curator.ensemble.fixed.FixedEnsembleProvider;
@@ -14,6 +13,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.util.SortedSet;
+import java.util.TreeSet;
 
 /**
  * DEPRECATED: Newer versions of ZooKeeper do the right thing, so this is no longer necessary. This is now
@@ -125,7 +125,7 @@ public class ResolvingEnsembleProvider implements EnsembleProvider {
         @Override
         public String getConnectionString() {
             StringBuilder connectStringBuilder = new StringBuilder();
-            SortedSet<String> addresses = Sets.newTreeSet();
+            SortedSet<String> addresses = new TreeSet<>();
 
             for (InetSocketAddress hostAndPort : _connectStringParser.getServerAddresses()) {
                 try {

@@ -1,11 +1,8 @@
 package com.bazaarvoice.curator.recipes.leader;
 
 import com.bazaarvoice.curator.test.ZooKeeperTest;
-import com.google.common.base.Objects;
-import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
-import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.AbstractIdleService;
 import com.google.common.util.concurrent.AbstractScheduledService;
 import com.google.common.util.concurrent.AbstractService;
@@ -18,13 +15,16 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.Closeable;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
+import java.util.StringJoiner;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 
-import static com.google.common.base.Preconditions.checkNotNull;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -161,7 +161,7 @@ public class LeaderServiceTest extends ZooKeeperTest {
         ServiceTriggers triggers2 = new ServiceTriggers();
         ServiceTimer timer1 = new ServiceTimer();
         ServiceTimer timer2 = new ServiceTimer();
-        List<Event> events = Collections.synchronizedList(Lists.<Event>newArrayList());
+        List<Event> events = Collections.synchronizedList(new ArrayList<>());
         Service leader = newLeaderService(reacquireDelayMillis, TimeUnit.MILLISECONDS, supply(
                 triggers1.listenTo(timer1.listenTo(trackEvents("1", events, new NopService()))),
                 triggers2.listenTo(timer2.listenTo(trackEvents("2", events, new NopService())))));
@@ -201,7 +201,7 @@ public class LeaderServiceTest extends ZooKeeperTest {
         ServiceTriggers triggers2 = new ServiceTriggers();
         ServiceTimer timer1 = new ServiceTimer();
         ServiceTimer timer2 = new ServiceTimer();
-        List<Event> events = Collections.synchronizedList(Lists.<Event>newArrayList());
+        List<Event> events = Collections.synchronizedList(new ArrayList<>());
         Service leader = newLeaderService(reacquireDelayMillis, TimeUnit.MILLISECONDS, supply(
                 triggers1.listenTo(timer1.listenTo(trackEvents("1", events, new NopService() {
                     @Override
@@ -236,7 +236,7 @@ public class LeaderServiceTest extends ZooKeeperTest {
         ServiceTriggers triggers2 = new ServiceTriggers();
         ServiceTimer timer1 = new ServiceTimer();
         ServiceTimer timer2 = new ServiceTimer();
-        List<Event> events = Collections.synchronizedList(Lists.<Event>newArrayList());
+        List<Event> events = Collections.synchronizedList(new ArrayList<>());
         Service leader = newLeaderService(reacquireDelayMillis, TimeUnit.MILLISECONDS, supply(
                 triggers1.listenTo(timer1.listenTo(trackEvents("1", events, new NopService() {
                     @Override
@@ -304,21 +304,16 @@ public class LeaderServiceTest extends ZooKeeperTest {
     public void testThreadName() throws Exception {
         final String expectedThreadName = "TestLeaderService";
         final SettableFuture<String> actualThreadName = SettableFuture.create();
-        register(new LeaderService(_curator, PATH, "id", expectedThreadName, 1, TimeUnit.HOURS, new Supplier<Service>() {
+        register(new LeaderService(_curator, PATH, "id", expectedThreadName, 1, TimeUnit.HOURS, () -> new AbstractService() {
             @Override
-            public Service get() {
-                return new AbstractService() {
-                    @Override
-                    protected void doStart() {
-                        actualThreadName.set(Thread.currentThread().getName());
-                        notifyStarted();
-                    }
+            protected void doStart() {
+                actualThreadName.set(Thread.currentThread().getName());
+                notifyStarted();
+            }
 
-                    @Override
-                    protected void doStop() {
-                        notifyStopped();
-                    }
-                };
+            @Override
+            protected void doStop() {
+                notifyStopped();
             }
         })).startAsync();
         assertEquals(expectedThreadName, actualThreadName.get(1, TimeUnit.MINUTES));
@@ -478,8 +473,8 @@ public class LeaderServiceTest extends ZooKeeperTest {
         private final Service.State _state;
 
         private Event(String id, Service.State state) {
-            _id = checkNotNull(id, "id");
-            _state = checkNotNull(state, "state");
+            _id = Objects.requireNonNull(id, "id");
+            _state = Objects.requireNonNull(state, "state");
         }
 
         @Override
@@ -497,14 +492,14 @@ public class LeaderServiceTest extends ZooKeeperTest {
 
         @Override
         public int hashCode() {
-            return Objects.hashCode(_id, _state);
+            return Objects.hash(_id, _state);
         }
 
         @Override
         public String toString() {
-            return Objects.toStringHelper(this)
-                    .add("id", _id)
-                    .add("state", _state)
+            return new StringJoiner(", ", Event.class.getSimpleName() + "[", "]")
+                    .add("_id='" + _id + "'")
+                    .add("_state=" + _state)
                     .toString();
         }
     }

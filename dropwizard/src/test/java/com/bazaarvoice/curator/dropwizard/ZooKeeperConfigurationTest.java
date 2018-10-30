@@ -2,7 +2,7 @@ package com.bazaarvoice.curator.dropwizard;
 
 import com.fasterxml.jackson.databind.MappingJsonFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.guava.GuavaModule;
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
 import io.dropwizard.lifecycle.setup.LifecycleEnvironment;
@@ -29,7 +29,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 public class ZooKeeperConfigurationTest {
-    private final ObjectMapper _parser = new MappingJsonFactory().getCodec().registerModule(new GuavaModule());
+    private final ObjectMapper _parser = new MappingJsonFactory().getCodec().registerModule(new Jdk8Module());
 
     @Test
     public void testMissingConnectString() {

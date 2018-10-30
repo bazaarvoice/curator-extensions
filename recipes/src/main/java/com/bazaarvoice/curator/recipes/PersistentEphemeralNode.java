@@ -15,6 +15,7 @@ import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.Stat;
 
+import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -25,7 +26,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * A persistent ephemeral node is an ephemeral node that attempts to stay present in ZooKeeper, even through connection
@@ -56,11 +56,11 @@ public class PersistentEphemeralNode {
      * @param mode Node creation mode.
      */
     public PersistentEphemeralNode(CuratorFramework curator, String basePath, byte[] data, CreateMode mode) {
-        checkNotNull(curator);
+        Objects.requireNonNull(curator);
         checkArgument(curator.getState() == CuratorFrameworkState.STARTED);
-        checkNotNull(basePath);
-        checkNotNull(data);
-        checkNotNull(mode);
+        Objects.requireNonNull(basePath);
+        Objects.requireNonNull(data);
+        Objects.requireNonNull(mode);
         checkArgument(mode == CreateMode.EPHEMERAL || mode == CreateMode.EPHEMERAL_SEQUENTIAL);
 
         // TODO: Share this executor across multiple persistent ephemeral nodes in a way that guarantees that it is a

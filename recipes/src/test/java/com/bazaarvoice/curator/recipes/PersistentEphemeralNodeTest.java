@@ -1,7 +1,6 @@
 package com.bazaarvoice.curator.recipes;
 
 import com.bazaarvoice.curator.test.ZooKeeperTest;
-import com.google.common.collect.Lists;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.CreateMode;
@@ -9,6 +8,7 @@ import org.apache.zookeeper.data.Stat;
 import org.junit.After;
 import org.junit.Test;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.concurrent.TimeUnit;
 
@@ -26,7 +26,7 @@ public class PersistentEphemeralNodeTest extends ZooKeeperTest {
     private CuratorFramework _curator;
 
     /** Keep track of the nodes that were created during this test so that they can be cleaned up at the end. */
-    private final Collection<PersistentEphemeralNode> _createdNodes = Lists.newArrayList();
+    private final Collection<PersistentEphemeralNode> _createdNodes = new ArrayList<>();
 
     @Override
     public void setup() throws Exception {

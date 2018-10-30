@@ -5,7 +5,8 @@ import io.dropwizard.lifecycle.Managed;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.imps.CuratorFrameworkState;
 
-import static com.google.common.base.Preconditions.checkNotNull;
+import java.util.Objects;
+
 
 /**
  * Managed interface for {@code CuratorFramework}.  This will cleanly close the ZooKeeper connection when a Dropwizard
@@ -15,7 +16,7 @@ public class ManagedCuratorFramework implements Managed {
     private final CuratorFramework _curator;
 
     public ManagedCuratorFramework(CuratorFramework curator) {
-        _curator = checkNotNull(curator);
+        _curator = Objects.requireNonNull(curator);
     }
 
     @Override

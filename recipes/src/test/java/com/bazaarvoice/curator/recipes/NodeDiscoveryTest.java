@@ -1,9 +1,7 @@
 package com.bazaarvoice.curator.recipes;
 
 import com.bazaarvoice.curator.test.ZooKeeperTest;
-import com.google.common.base.Objects;
 import com.google.common.base.Throwables;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.utils.ZKPaths;
@@ -12,9 +10,11 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
@@ -34,12 +34,7 @@ public class NodeDiscoveryTest extends ZooKeeperTest {
     // A node that's not under the path that the node discovery watches
     private static final String UNWATCHED = ZKPaths.makePath("/other-path", "node");
 
-    private static final NodeDiscovery.NodeDataParser<String> PARSER = new NodeDiscovery.NodeDataParser<String>() {
-        @Override
-        public String parse(String path, byte[] data) {
-            return new String(data);
-        }
-    };
+    private static final NodeDiscovery.NodeDataParser<String> PARSER = (path, data) -> new String(data);
 
     private NodeDiscovery<String> _nodeDiscovery;
     private CuratorFramework _curator;
@@ -61,21 +56,21 @@ public class NodeDiscoveryTest extends ZooKeeperTest {
 
     @Test(expected = NullPointerException.class)
     public void testNullConnection() {
-        new NodeDiscovery<String>(null, PATH, PARSER);
+        new NodeDiscovery<>(null, PATH, PARSER);
     }
 
     @Test(expected = NullPointerException.class)
-    public void testNullPath() throws Exception {
-        new NodeDiscovery<String>(_curator, null, PARSER);
+    public void testNullPath() {
+        new NodeDiscovery<>(_curator, null, PARSER);
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void testEmptyPath() throws Exception {
-        new NodeDiscovery<String>(_curator, "", PARSER);
+    public void testEmptyPath() {
+        new NodeDiscovery<>(_curator, "", PARSER);
     }
 
     @Test(expected = NullPointerException.class)
-    public void testNullParser() throws Exception {
+    public void testNullParser() {
         new NodeDiscovery<String>(_curator, PATH, null);
     }
 
@@ -148,24 +143,16 @@ public class NodeDiscoveryTest extends ZooKeeperTest {
         final NodeDiscovery<String> discovery = newDiscovery(PATH, PARSER);
 
         // Delete FOO and start the discovery as close together as possible, so they race with each other.
-        List<Runnable> runnables = Lists.newArrayList(
-                new Runnable() {
-                    @Override
-                    public void run() {
-                        try {
-                            deleteNode(FOO);
-                        } catch (Exception e) {
-                            throw Throwables.propagate(e);
-                        }
+        List<Runnable> runnables = Arrays.asList(
+                () -> {
+                    try {
+                        deleteNode(FOO);
+                    } catch (Exception e) {
+                        throw Throwables.propagate(e);
                     }
                 },
 
-                new Runnable() {
-                    @Override
-                    public void run() {
-                        discovery.start();
-                    }
-                }
+                discovery::start
         );
         Collections.shuffle(runnables);
 
@@ -216,7 +203,7 @@ public class NodeDiscoveryTest extends ZooKeeperTest {
 
     @Test
     public void testListenerCalledWhenAddNode() throws Exception {
-        AddTrigger<String> trigger = new AddTrigger<String>(FOO);
+        AddTrigger<String> trigger = new AddTrigger<>(FOO);
         _nodeDiscovery.addListener(trigger);
 
         createNode(FOO);
@@ -228,7 +215,7 @@ public class NodeDiscoveryTest extends ZooKeeperTest {
         createNode(FOO);
         assertTrue(waitUntilSize(_nodeDiscovery.getNodes(), 1));
 
-        UpdateTrigger<String> trigger = new UpdateTrigger<String>(FOO);
+        UpdateTrigger<String> trigger = new UpdateTrigger<>(FOO);
         _nodeDiscovery.addListener(trigger);
 
         updateNode(FOO, "updated data".getBytes());
@@ -240,7 +227,7 @@ public class NodeDiscoveryTest extends ZooKeeperTest {
         createNode(FOO);
         assertTrue(waitUntilSize(_nodeDiscovery.getNodes(), 1));
 
-        RemoveTrigger<String> trigger = new RemoveTrigger<String>(FOO);
+        RemoveTrigger<String> trigger = new RemoveTrigger<>(FOO);
         _nodeDiscovery.addListener(trigger);
 
         deleteNode(FOO);
@@ -253,7 +240,7 @@ public class NodeDiscoveryTest extends ZooKeeperTest {
 
         NodeDiscovery<String> nodeDiscovery = newDiscovery(PATH, PARSER);
 
-        AddTrigger<String> trigger = new AddTrigger<String>(FOO);
+        AddTrigger<String> trigger = new AddTrigger<>(FOO);
         nodeDiscovery.addListener(trigger);
 
         nodeDiscovery.start();
@@ -263,7 +250,7 @@ public class NodeDiscoveryTest extends ZooKeeperTest {
 
     @Test
     public void testRemovedListenerNotCalledWhenAddNode() throws Exception {
-        AddTrigger<String> trigger = new AddTrigger<String>(FOO);
+        AddTrigger<String> trigger = new AddTrigger<>(FOO);
         _nodeDiscovery.addListener(trigger);
         _nodeDiscovery.removeListener(trigger);
 
@@ -276,7 +263,7 @@ public class NodeDiscoveryTest extends ZooKeeperTest {
     public void testRemovedListenerNotCalledWhenUpdateNode() throws Exception {
         createNode(FOO);
 
-        UpdateTrigger<String> trigger = new UpdateTrigger<String>(FOO);
+        UpdateTrigger<String> trigger = new UpdateTrigger<>(FOO);
         _nodeDiscovery.addListener(trigger);
         _nodeDiscovery.removeListener(trigger);
 
@@ -289,7 +276,7 @@ public class NodeDiscoveryTest extends ZooKeeperTest {
     public void testRemovedListenerNotCalledWhenRemoveNode() throws Exception {
         createNode(FOO);
 
-        RemoveTrigger<String> trigger = new RemoveTrigger<String>(FOO);
+        RemoveTrigger<String> trigger = new RemoveTrigger<>(FOO);
         _nodeDiscovery.addListener(trigger);
         _nodeDiscovery.removeListener(trigger);
 
@@ -300,8 +287,8 @@ public class NodeDiscoveryTest extends ZooKeeperTest {
 
     @Test
     public void testMultipleListenersCalledWhenAddNode() throws Exception {
-        AddTrigger<String> trigger1 = new AddTrigger<String>(FOO);
-        AddTrigger<String> trigger2 = new AddTrigger<String>(FOO);
+        AddTrigger<String> trigger1 = new AddTrigger<>(FOO);
+        AddTrigger<String> trigger2 = new AddTrigger<>(FOO);
         _nodeDiscovery.addListener(trigger1);
         _nodeDiscovery.addListener(trigger2);
 
@@ -317,8 +304,8 @@ public class NodeDiscoveryTest extends ZooKeeperTest {
         createNode(FOO);
         assertTrue(waitUntilSize(_nodeDiscovery.getNodes(), 1));
 
-        UpdateTrigger<String> trigger1 = new UpdateTrigger<String>(FOO);
-        UpdateTrigger<String> trigger2 = new UpdateTrigger<String>(FOO);
+        UpdateTrigger<String> trigger1 = new UpdateTrigger<>(FOO);
+        UpdateTrigger<String> trigger2 = new UpdateTrigger<>(FOO);
         _nodeDiscovery.addListener(trigger1);
         _nodeDiscovery.addListener(trigger2);
 
@@ -332,8 +319,8 @@ public class NodeDiscoveryTest extends ZooKeeperTest {
         createNode(FOO);
         assertTrue(waitUntilSize(_nodeDiscovery.getNodes(), 1));
 
-        RemoveTrigger<String> trigger1 = new RemoveTrigger<String>(FOO);
-        RemoveTrigger<String> trigger2 = new RemoveTrigger<String>(FOO);
+        RemoveTrigger<String> trigger1 = new RemoveTrigger<>(FOO);
+        RemoveTrigger<String> trigger2 = new RemoveTrigger<>(FOO);
         _nodeDiscovery.addListener(trigger1);
         _nodeDiscovery.addListener(trigger2);
 
@@ -344,7 +331,7 @@ public class NodeDiscoveryTest extends ZooKeeperTest {
 
     @Test
     public void testListenerNotCalledWhenDifferentPathAddNode() throws Exception {
-        AddTrigger<String> trigger = new AddTrigger<String>(UNWATCHED);
+        AddTrigger<String> trigger = new AddTrigger<>(UNWATCHED);
         _nodeDiscovery.addListener(trigger);
 
         WatchTrigger created = WatchTrigger.creationTrigger();
@@ -357,7 +344,7 @@ public class NodeDiscoveryTest extends ZooKeeperTest {
 
     @Test
     public void testListenerNotCalledWhenDifferentPathUpdateNode() throws Exception {
-        UpdateTrigger<String> trigger = new UpdateTrigger<String>(UNWATCHED);
+        UpdateTrigger<String> trigger = new UpdateTrigger<>(UNWATCHED);
         _nodeDiscovery.addListener(trigger);
 
         WatchTrigger created = WatchTrigger.creationTrigger();
@@ -376,7 +363,7 @@ public class NodeDiscoveryTest extends ZooKeeperTest {
 
     @Test
     public void testListenerNotCalledWhenDifferentPathRemoveNode() throws Exception {
-        RemoveTrigger<String> trigger = new RemoveTrigger<String>(UNWATCHED);
+        RemoveTrigger<String> trigger = new RemoveTrigger<>(UNWATCHED);
         _nodeDiscovery.addListener(trigger);
 
         WatchTrigger created = WatchTrigger.creationTrigger();
@@ -395,7 +382,7 @@ public class NodeDiscoveryTest extends ZooKeeperTest {
 
     @Test
     public void testListenerCalledWithNodeValueWhenAddNode() throws Exception {
-        final AtomicReference<String> actualData = new AtomicReference<String>();
+        final AtomicReference<String> actualData = new AtomicReference<>();
         AddTrigger<String> trigger = new AddTrigger<String>(FOO) {
             @Override
             public void onNodeAdded(String path, String data) {
@@ -414,7 +401,7 @@ public class NodeDiscoveryTest extends ZooKeeperTest {
 
     @Test
     public void testListenerCalledWithNodeValueWhenUpdateNode() throws Exception {
-        final AtomicReference<String> actualData = new AtomicReference<String>();
+        final AtomicReference<String> actualData = new AtomicReference<>();
         UpdateTrigger<String> trigger = new UpdateTrigger<String>(FOO) {
             @Override
             public void onNodeUpdated(String path, String data) {
@@ -434,7 +421,7 @@ public class NodeDiscoveryTest extends ZooKeeperTest {
 
     @Test
     public void testListenerCalledWithNodeValueWhenRemoveNode() throws Exception {
-        final AtomicReference<String> actualData = new AtomicReference<String>();
+        final AtomicReference<String> actualData = new AtomicReference<>();
         RemoveTrigger<String> trigger = new RemoveTrigger<String>(FOO) {
             @Override
             public void onNodeRemoved(String path, String data) {
@@ -459,12 +446,7 @@ public class NodeDiscoveryTest extends ZooKeeperTest {
     @Test
     public void testParserReturnValueUsedWhenAddNode() throws Exception {
         final Object value = new Object();
-        NodeDiscovery<Object> discovery = newDiscovery(PATH, new NodeDiscovery.NodeDataParser<Object>() {
-            @Override
-            public Object parse(String path, byte[] nodeData) {
-                return value;
-            }
-        });
+        NodeDiscovery<Object> discovery = newDiscovery(PATH, (path, nodeData) -> value);
         discovery.start();
 
         createNode(FOO);
@@ -495,12 +477,7 @@ public class NodeDiscoveryTest extends ZooKeeperTest {
 
     @Test
     public void testParserReturnValueOfNullAllowed() throws Exception {
-        NodeDiscovery<Object> discovery = newDiscovery(PATH, new NodeDiscovery.NodeDataParser<Object>() {
-            @Override
-            public Object parse(String path, byte[] nodeData) {
-                return null;
-            }
-        });
+        NodeDiscovery<Object> discovery = newDiscovery(PATH, (path, nodeData) -> null);
         discovery.start();
 
         createNode(FOO, "data".getBytes());
@@ -510,11 +487,8 @@ public class NodeDiscoveryTest extends ZooKeeperTest {
 
     @Test
     public void testParserExceptionTreatedAsNull() throws Exception {
-        NodeDiscovery<Object> discovery = newDiscovery(PATH, new NodeDiscovery.NodeDataParser<Object>() {
-            @Override
-            public Object parse(String path, byte[] nodeData) {
-                throw new RuntimeException();
-            }
+        NodeDiscovery<Object> discovery = newDiscovery(PATH, (path, nodeData) -> {
+            throw new RuntimeException();
         });
         discovery.start();
 
@@ -580,21 +554,18 @@ public class NodeDiscoveryTest extends ZooKeeperTest {
 
         final Set<Thread> threadsAtStart = Thread.getAllStackTraces().keySet();
 
-        NodeDiscovery<String> nodeDiscovery = closer().register(new NodeDiscovery<String>(curator, PATH, PARSER));
+        NodeDiscovery<String> nodeDiscovery = closer().register(new NodeDiscovery<>(curator, PATH, PARSER));
         nodeDiscovery.start();
         nodeDiscovery.close();
 
         // Get the threads at the end.  Since NodeDiscovery calls shutdown() but doesn't awaitTermination() we may
         // have to wait a little while for the NodeDiscovery test to terminate.  Wait up to 10 seconds for things
         // to settle before failing the test (in the success case the loop will terminate quickly).
-        assertTrue(waitUntil(new Callable<Boolean>() {
-            @Override
-            public Boolean call() throws Exception {
-                Set<Thread> threadsAtEnd = Thread.getAllStackTraces().keySet();
-                Set<Thread> difference = Sets.difference(threadsAtEnd, threadsAtStart);
-                LOG.info("Extra threads: {}", difference);
-                return difference.isEmpty();
-            }
+        assertTrue(waitUntil(() -> {
+            Set<Thread> threadsAtEnd = Thread.getAllStackTraces().keySet();
+            Set<Thread> difference = Sets.difference(threadsAtEnd, threadsAtStart);
+            LOG.info("Extra threads: {}", difference);
+            return difference.isEmpty();
         }));
     }
 
@@ -603,7 +574,7 @@ public class NodeDiscoveryTest extends ZooKeeperTest {
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     private <T> NodeDiscovery<T> newDiscovery(String path, NodeDiscovery.NodeDataParser<T> parser) throws Exception {
-        return closer().register(new NodeDiscovery<T>(newCurator(), path, parser));
+        return closer().register(new NodeDiscovery<>(newCurator(), path, parser));
     }
 
     /** Create a node. */
@@ -655,7 +626,7 @@ public class NodeDiscoveryTest extends ZooKeeperTest {
     private static <K, T> boolean waitUntilValue(Map<K, T> map, K key, T value) {
         long start = System.nanoTime();
         while (System.nanoTime() - start <= TimeUnit.SECONDS.toNanos((long) 10)) {
-            if (Objects.equal(map.get(key), value)) {
+            if (Objects.equals(map.get(key), value)) {
                 return true;
             }
 

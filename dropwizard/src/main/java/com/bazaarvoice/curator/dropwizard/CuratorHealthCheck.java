@@ -3,13 +3,14 @@ package com.bazaarvoice.curator.dropwizard;
 import com.codahale.metrics.health.HealthCheck;
 import org.apache.curator.framework.CuratorFramework;
 
-import static com.google.common.base.Preconditions.checkNotNull;
+import java.util.Objects;
+
 
 public class CuratorHealthCheck extends HealthCheck {
     private final CuratorFramework _curator;
 
     public CuratorHealthCheck(CuratorFramework curator) {
-        _curator = checkNotNull(curator);
+        _curator = Objects.requireNonNull(curator);
     }
 
     @Override

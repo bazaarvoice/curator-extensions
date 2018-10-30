@@ -1,7 +1,5 @@
 package com.bazaarvoice.curator.recipes.leader;
 
-import com.google.common.base.Optional;
-import com.google.common.base.Supplier;
 import com.google.common.util.concurrent.AbstractExecutionThreadService;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.Service;
@@ -16,10 +14,12 @@ import org.slf4j.LoggerFactory;
 import java.io.EOFException;
 import java.io.IOException;
 import java.util.Collection;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
 /**
@@ -101,12 +101,12 @@ public class LeaderService extends AbstractExecutionThreadService {
      */
     public LeaderService(CuratorFramework curator, String leaderPath, String instanceId, String serviceName,
                          long reacquireDelay, TimeUnit reacquireDelayUnit, Supplier<Service> serviceFactory) {
-        _curator = checkNotNull(curator, "curator");
-        _leaderPath = checkNotNull(leaderPath, "leaderPath");
-        _instanceId = checkNotNull(instanceId, "instanceId");
-        _serviceName = checkNotNull(serviceName, "serviceName");
-        _serviceFactory = checkNotNull(serviceFactory, "serviceFactory");
-        _reacquireDelayNanos = checkNotNull(reacquireDelayUnit, "reacquireDelayUnit").toNanos(reacquireDelay);
+        _curator = Objects.requireNonNull(curator, "curator");
+        _leaderPath = Objects.requireNonNull(leaderPath, "leaderPath");
+        _instanceId = Objects.requireNonNull(instanceId, "instanceId");
+        _serviceName = Objects.requireNonNull(serviceName, "serviceName");
+        _serviceFactory = Objects.requireNonNull(serviceFactory, "serviceFactory");
+        _reacquireDelayNanos = Objects.requireNonNull(reacquireDelayUnit, "reacquireDelayUnit").toNanos(reacquireDelay);
         checkArgument(_reacquireDelayNanos >= 0, "reacquireDelay must be non-negative");
         initLeaderLatch();
     }
@@ -153,11 +153,11 @@ public class LeaderService extends AbstractExecutionThreadService {
     }
 
     /**
-     * @return The current wrapped service instance, if any.  Returns {@link Optional#absent()} when this instance
+     * @return The current wrapped service instance, if any.  Returns {@link Optional#empty()} ()} when this instance
      * does not own the leadership lock.
      */
     public Optional<Service> getCurrentDelegateService() {
-        return _latch.hasLeadership() ? Optional.fromNullable(_delegate) : Optional.<Service>absent();
+        return _latch.hasLeadership() ? Optional.ofNullable(_delegate) : Optional.<Service>empty();
     }
 
     @Override

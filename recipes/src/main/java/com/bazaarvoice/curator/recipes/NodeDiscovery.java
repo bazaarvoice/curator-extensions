@@ -1,11 +1,7 @@
 package com.bazaarvoice.curator.recipes;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Function;
-import com.google.common.base.Objects;
-import com.google.common.base.Optional;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.imps.CuratorFrameworkState;
@@ -20,15 +16,18 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * The {@code NodeDiscovery} class is used to watch a path in ZooKeeper. It will monitor which nodes
@@ -60,9 +59,9 @@ public class NodeDiscovery<T> implements Closeable {
      * @param parser     The strategy to convert from ZooKeeper {@code byte[]} to {@code T}.
      */
     public NodeDiscovery(CuratorFramework curator, String nodePath, NodeDataParser<T> parser) {
-        checkNotNull(curator);
-        checkNotNull(nodePath);
-        checkNotNull(parser);
+        Objects.requireNonNull(curator);
+        Objects.requireNonNull(nodePath);
+        Objects.requireNonNull(parser);
         checkArgument(curator.getState() == CuratorFrameworkState.STARTED);
         checkArgument(!"".equals(nodePath));
 
@@ -71,8 +70,8 @@ public class NodeDiscovery<T> implements Closeable {
                 .setDaemon(true)
                 .build();
 
-        _nodes = Maps.newConcurrentMap();
-        _listeners = Sets.newSetFromMap(Maps.<NodeListener<T>, Boolean>newConcurrentMap());
+        _nodes = new ConcurrentHashMap<>();
+        _listeners = Collections.newSetFromMap(new ConcurrentHashMap<>());
         _curator = curator;
         _executor = Executors.newSingleThreadScheduledExecutor(threadFactory);
         _pathCache = new PathChildrenCache(curator, nodePath, true, false, _executor);
@@ -94,12 +93,7 @@ public class NodeDiscovery<T> implements Closeable {
      * @return The available nodes.
      */
     public Map<String, T> getNodes() {
-        return Maps.transformValues(Collections.unmodifiableMap(_nodes), new Function<Optional<T>, T>() {
-            @Override
-            public T apply(Optional<T> input) {
-                return (input != null) ? input.orNull() : null;
-            }
-        });
+        return Maps.transformValues(Collections.unmodifiableMap(_nodes), input -> (input != null) ? input.orElse(null) : null);
     }
 
     /**
@@ -109,7 +103,7 @@ public class NodeDiscovery<T> implements Closeable {
      * @return True if the specified node is a member of the iterable returned by {@link #getNodes()}.
      */
     public boolean contains(T node) {
-        return _nodes.containsValue(Optional.fromNullable(node));
+        return _nodes.containsValue(Optional.ofNullable(node));
     }
 
     /**
@@ -176,12 +170,7 @@ public class NodeDiscovery<T> implements Closeable {
      * Wait a short period of time then try to start the path cache again.
      */
     private void waitThenStartAgain() {
-        _executor.schedule(new Runnable() {
-            @Override
-            public void run() {
-                startThenLoadData();
-            }
-        }, WAIT_DURATION_IN_MILLIS, TimeUnit.MILLISECONDS);
+        _executor.schedule(this::startThenLoadData, WAIT_DURATION_IN_MILLIS, TimeUnit.MILLISECONDS);
     }
 
     /**
@@ -196,7 +185,7 @@ public class NodeDiscovery<T> implements Closeable {
     private synchronized void addNode(String path, T node) {
         // synchronize the modification of _nodes and firing of events so listeners always receive events in the
         // order they occur.
-        if (_nodes.put(path, Optional.fromNullable(node)) == null) {
+        if (_nodes.put(path, Optional.ofNullable(node)) == null) {
             fireAddEvent(path, node);
         }
     }
@@ -212,8 +201,8 @@ public class NodeDiscovery<T> implements Closeable {
     private synchronized void updateNode(String path, T node) {
         // synchronize the modification of _nodes and firing of events so listeners always receive events in the
         // order they occur.
-        Optional<T> oldNode = _nodes.put(path, Optional.fromNullable(node));
-        if (!Objects.equal(oldNode.orNull(), node)) {
+        Optional<T> oldNode = _nodes.put(path, Optional.ofNullable(node));
+        if (!Objects.equals(oldNode.orElse(null), node)) {
             fireUpdateEvent(path, node);
         }
     }
@@ -254,7 +243,7 @@ public class NodeDiscovery<T> implements Closeable {
      */
     private final class PathListener implements PathChildrenCacheListener {
         @Override
-        public void childEvent(CuratorFramework client, PathChildrenCacheEvent event) throws Exception {
+        public void childEvent(CuratorFramework client, PathChildrenCacheEvent event) {
             String nodePath = null;
             T nodeData = null;
             if (event.getData() != null) {
@@ -281,12 +270,12 @@ public class NodeDiscovery<T> implements Closeable {
      * The {@code NodeDataParser} class is used to encapsulate the strategy that converts ZooKeeper node data into
      * a logical format for the user of {@code NodeDiscovery}.
      */
-    public static interface NodeDataParser<T> {
+    public interface NodeDataParser<T> {
         T parse(String path, byte[] nodeData);
     }
 
     /** Listener interface that is notified when nodes are added, removed, or updated. */
-    public static interface NodeListener<T> {
+    public interface NodeListener<T> {
         void onNodeAdded(String path, T node);
         void onNodeRemoved(String path, T node);
         void onNodeUpdated(String path, T node);

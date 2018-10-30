@@ -6,7 +6,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.google.common.base.Optional;
 import com.google.common.primitives.Ints;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.dropwizard.lifecycle.setup.LifecycleEnvironment;
@@ -17,6 +16,7 @@ import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.hibernate.validator.valuehandling.UnwrapValidatedValue;
 
 import javax.validation.constraints.NotNull;
+import java.util.Optional;
 import java.util.concurrent.ThreadFactory;
 
 /** Jackson friendly object for holding configuration information about a ZooKeeper ensemble. */
@@ -27,10 +27,10 @@ public class ZooKeeperConfiguration {
     @NotNull
     @JsonProperty("connectString")
     @UnwrapValidatedValue(false)
-    private Optional<String> _connectString = Optional.absent();
+    private Optional<String> _connectString = Optional.empty();
 
     @JsonProperty("namespace")
-    private Optional<String> _namespace = Optional.absent();
+    private Optional<String> _namespace = Optional.empty();
 
     @JsonProperty("retryPolicy")
     private RetryPolicy _configRetryPolicy = null;
@@ -46,7 +46,7 @@ public class ZooKeeperConfiguration {
      * we want callers to be able to specify any Curator {@link org.apache.curator.RetryPolicy} implementation instead
      * of the inner {@link RetryPolicy} and its subclasses that are used entirely to hold Jackson annotations.
      */
-    private Optional<org.apache.curator.RetryPolicy> _setterRetryPolicy = Optional.absent();
+    private Optional<org.apache.curator.RetryPolicy> _setterRetryPolicy = Optional.empty();
 
     /**
      * Return a new Curator connection to the ensemble.  It is the caller's responsibility to start and close the
@@ -56,21 +56,21 @@ public class ZooKeeperConfiguration {
         // Make all of the curator threads daemon threads so they don't block the JVM from terminating.  Also label them
         // with the ensemble they're connecting to, in case someone is trying to sort through a thread dump.
         ThreadFactory threadFactory = new ThreadFactoryBuilder()
-                .setNameFormat("CuratorFramework[" + _connectString.or(DEFAULT_CONNECT_STRING) + "]-%d")
+                .setNameFormat("CuratorFramework[" + _connectString.orElse(DEFAULT_CONNECT_STRING) + "]-%d")
                 .setDaemon(true)
                 .build();
 
-        org.apache.curator.RetryPolicy retry = _setterRetryPolicy.or(
+        org.apache.curator.RetryPolicy retry = _setterRetryPolicy.orElse(
                 (_configRetryPolicy != null)
                         ? _configRetryPolicy
                         : DEFAULT_RETRY_POLICY
         );
         return CuratorFrameworkFactory.builder()
-                .ensembleProvider(new ResolvingEnsembleProvider(_connectString.or(DEFAULT_CONNECT_STRING)))
+                .ensembleProvider(new ResolvingEnsembleProvider(_connectString.orElse(DEFAULT_CONNECT_STRING)))
                 .retryPolicy(retry)
                 .sessionTimeoutMs(Ints.checkedCast(_sessionTimeout.toMilliseconds()))
                 .connectionTimeoutMs(Ints.checkedCast(_connectionTimeout.toMilliseconds()))
-                .namespace(_namespace.orNull())
+                .namespace(_namespace.orElse(null))
                 .threadFactory(threadFactory)
                 .build();
     }
@@ -112,7 +112,7 @@ public class ZooKeeperConfiguration {
             return _setterRetryPolicy;
         }
 
-        return Optional.<org.apache.curator.RetryPolicy>fromNullable(_configRetryPolicy);
+        return Optional.<org.apache.curator.RetryPolicy>ofNullable(_configRetryPolicy);
     }
 
     @JsonIgnore
