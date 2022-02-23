@@ -5,7 +5,7 @@
     <parent>
         <groupId>com.bazaarvoice.commons</groupId>
         <artifactId>bv-opensource-super-pom</artifactId>
-        <version>1.9</version>
+        <version>1.12</version>
     </parent>
 
     <groupId>com.bazaarvoice.curator</groupId>
@@ -36,6 +36,7 @@
         <zookeeper.version>3.5.6</zookeeper.version>
         <logback.version>1.2.3</logback.version>
         <jackson.version>2.10.2</jackson.version>
+        <dropwizard.version>1.3.17</dropwizard.version>
         <dependency.check.skip>false</dependency.check.skip>
     </properties>
 
@@ -78,12 +79,51 @@
                         <id>enforce</id>
                         <configuration>
                             <rules>
-                                <requireUpperBoundDeps />
+                                <requireMavenVersion>
+                                    <!-- See http://maven.apache.org/enforcer/enforcer-rules/versionRanges.html for an explanation of version ranges-->
+                                    <version>[${maven.minimum.version},)</version>
+                                    <message>requires maven ${maven.minimum.version}</message>
+                                </requireMavenVersion>
+                                <requireJavaVersion>
+                                    <!-- See http://maven.apache.org/enforcer/enforcer-rules/versionRanges.html for an explanation of version ranges-->
+                                    <version>[${java.minimum.version},)</version>
+                                    <message>requires Java ${java.minimum.version}</message>
+                                </requireJavaVersion>
                                 <dependencyConvergence />
+                                <requireUpperBoundDeps />
+                                <banDuplicatePomDependencyVersions />
+                                <bannedDependencies>
+                                    <excludes>
+                                        <!-- This should not exist after DW 0.8.x+ upgrade -->
+                                        <!--                                        <exclude>com.codahale.metrics:*</exclude>-->
+                                        <!-- This should not exist as it will force SLF4J calls to be delegated to log4j -->
+                                        <exclude>org.slf4j:slf4j-log4j12</exclude>
+                                        <!-- This should not exist as it will force SLF4J calls to be delegated to jul -->
+                                        <exclude>org.slf4j:slf4j-jdk14</exclude>
+                                        <!-- Ensure only the slf4j binding for logback is on the classpath -->
+                                        <exclude>log4j:log4j</exclude>
+                                    </excludes>
+                                </bannedDependencies>
                             </rules>
                             <goals>
                                 <goal>enforce</goal>
                             </goals>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <version>3.1.2</version>
+                <executions>
+                    <execution>
+                        <id>analyze</id>
+                        <goals>
+                            <goal>analyze-only</goal>
+                        </goals>
+                        <configuration>
+                            <failOnWarning>true</failOnWarning>
                         </configuration>
                     </execution>
                 </executions>
@@ -124,12 +164,6 @@
                 <groupId>org.apache.curator</groupId>
                 <artifactId>curator-client</artifactId>
                 <version>${curator.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>org.apache.zookeeper</groupId>
-                        <artifactId>zookeeper</artifactId>
-                    </exclusion>
-                </exclusions>
             </dependency>
 
             <dependency>
@@ -149,9 +183,31 @@
             </dependency>
 
             <dependency>
+                <groupId>org.apache.zookeeper</groupId>
+                <artifactId>zookeeper-jute</artifactId>
+                <version>${zookeeper.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.slf4j</groupId>
+                        <artifactId>slf4j-log4j12</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <artifactId>log4j</artifactId>
+                        <groupId>log4j</groupId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+
+            <dependency>
                 <groupId>com.google.guava</groupId>
                 <artifactId>guava</artifactId>
                 <version>${guava.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-api</artifactId>
+                <version>${slf4j.version}</version>
             </dependency>
 
             <dependency>
@@ -175,17 +231,35 @@
             </dependency>
 
             <dependency>
-                <groupId>com.fasterxml.jackson.core</groupId>
-                <artifactId>jackson-annotations</artifactId>
-                <version>${jackson.version}</version>
+                <groupId>io.dropwizard</groupId>
+                <artifactId>dropwizard-core</artifactId>
+                <version>${dropwizard.version}</version>
             </dependency>
-
             <dependency>
-                <groupId>com.fasterxml.jackson.datatype</groupId>
-                <artifactId>jackson-datatype-jdk8</artifactId>
-                <version>${jackson.version}</version>
+                <groupId>io.dropwizard</groupId>
+                <artifactId>dropwizard-lifecycle</artifactId>
+                <version>${dropwizard.version}</version>
             </dependency>
-
+            <dependency>
+                <groupId>io.dropwizard</groupId>
+                <artifactId>dropwizard-util</artifactId>
+                <version>${dropwizard.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.hibernate</groupId>
+                <artifactId>hibernate-validator</artifactId>
+                <version>5.4.3.Final</version>
+            </dependency>
+            <dependency>
+                <groupId>javax.validation</groupId>
+                <artifactId>validation-api</artifactId>
+                <version>1.1.0.Final</version>
+            </dependency>
+            <dependency>
+                <groupId>io.dropwizard.metrics</groupId>
+                <artifactId>metrics-healthchecks</artifactId>
+                <version>4.0.5</version>
+            </dependency>
             <dependency>
                 <groupId>junit</groupId>
                 <artifactId>junit</artifactId>
@@ -200,10 +274,11 @@
                 <scope>test</scope>
             </dependency>
 
+            <!-- curator-test >= 3 is incompatible with ZooKeeper < 3.5 -->
             <dependency>
-                <groupId>org.slf4j</groupId>
-                <artifactId>slf4j-api</artifactId>
-                <version>${slf4j.version}</version>
+                <groupId>org.apache.curator</groupId>
+                <artifactId>curator-test</artifactId>
+                <version>2.12.0</version>
             </dependency>
 
             <dependency>
