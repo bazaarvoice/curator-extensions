@@ -89,9 +89,9 @@
                                     <version>[${java.minimum.version},)</version>
                                     <message>requires Java ${java.minimum.version}</message>
                                 </requireJavaVersion>
-                                <dependencyConvergence />
-                                <requireUpperBoundDeps />
-                                <banDuplicatePomDependencyVersions />
+                                <dependencyConvergence/>
+                                <requireUpperBoundDeps/>
+                                <banDuplicatePomDependencyVersions/>
                                 <bannedDependencies>
                                     <excludes>
                                         <!-- This should not exist after DW 0.8.x+ upgrade -->
@@ -258,7 +258,7 @@
             <dependency>
                 <groupId>io.dropwizard.metrics</groupId>
                 <artifactId>metrics-healthchecks</artifactId>
-                <version>4.0.5</version>
+                <version>4.2.11</version>
             </dependency>
             <dependency>
                 <groupId>junit</groupId>
